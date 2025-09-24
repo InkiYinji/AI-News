@@ -1,0 +1,102 @@
+version: "3.9"
+
+services:
+  # PostgreSQL 数据库
+  db:
+    image: postgres:15-alpine
+    container_name: ai-news-db
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: ai_news
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - ai-news-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d ai_news"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: ai-news-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    networks:
+      - ai-news-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI 后端
+  api:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ai-news-api
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      - DATABASE_URL=postgresql+psycopg://app:app@db:5432/ai_news
+      - ASYNC_DATABASE_URL=postgresql+asyncpg://app:app@db:5432/ai_news
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=your-secret-key-here-make-it-long-and-random
+      - DEBUG=true
+    volumes:
+      - ./backend:/app
+      - ./backend/uploads:/app/uploads
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ai-news-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # React 前端
+  web:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ai-news-web
+    command: npm run dev -- --host
+    volumes:
+      - ./frontend:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - ai-news-network
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000/api/v1
+
+volumes:
+  pgdata:
+    driver: local
+  redisdata:
+    driver: local
+
+networks:
+  ai-news-network:
+    driver: bridge
+

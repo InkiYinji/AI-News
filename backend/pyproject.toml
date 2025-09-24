@@ -1,0 +1,52 @@
+[tool.poetry]
+name = "ai-news-backend"
+version = "0.1.0"
+description = "AI-News FastAPI 后端"
+authors = ["你的名字 <you@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.110.0"
+uvicorn = {extras = ["standard"], version = "^0.29.0"}
+sqlalchemy = "^2.0.0"
+pydantic = "^2.0.0"
+pydantic-settings = "^2.0.0"
+alembic = "^1.13.0"
+psycopg2-binary = "^2.9.0"
+asyncpg = "^0.29.0"
+python-multipart = "^0.0.6"
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+python-dotenv = "^1.0.0"
+httpx = "^0.25.0"
+redis = "^5.0.0"
+celery = "^5.3.0"
+structlog = "^23.2.0"
+email-validator = "^2.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-asyncio = "^0.21.0"
+httpx = "^0.25.0"
+black = "^23.0.0"
+ruff = "^0.1.0"
+mypy = "^1.5.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
